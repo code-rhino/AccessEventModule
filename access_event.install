@@ -1,0 +1,29 @@
+<?php
+/**
+ * Implements hook_schema()
+ */
+function access_event_schema() {
+  $schema = array();
+
+  $schema['access_event'] = array(
+    'description' => 'The base table for our access_event entity.',
+      'fields' => array(
+        'access_event_id' => array(
+          'description' => 'Primary Key: Identifier for a access_event entity.',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'name' => array(
+          'description' => 'The name of our access_event entity.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+    ),
+    'primary key' => array('access_event_id'),
+  );
+
+  return $schema;
+}

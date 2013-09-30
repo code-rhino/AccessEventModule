@@ -1,0 +1,301 @@
+<?php
+/**
+ * Implements hook_entity_info()
+ *
+ * We let Drupal know about our entity via this functions - have a look at
+ * http://api.drupal.org/api/drupal/modules--system--system.api.php/function/hook_entity_info/7
+ * for all the information.
+ * Below we do the access_event to get an entity with one bundle going.
+ */
+function access_event_entity_info() {
+  $access_event_info['access_event'] = array(
+    'label' => t('access_event Entity'),
+    'controller class' => 'access_eventController',
+    'base table' => 'access_event',
+    'uri callback' => 'access_event_uri',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+      'id' => 'access_event_id',
+    ),
+    'static cache' => TRUE,
+    'bundles' => array(
+      'access_event' => array(
+        'label' => 'access_event',
+        'admin' => array(
+          'path' => 'admin/structure/access_event/manage',
+          'access arguments' => array('administer access_event entities'),
+        ),
+      ),
+    ),
+    'view modes' => array(
+      'full' => array(
+        'label' => t('Full'),
+        'custom settings' =>  FALSE,
+      ),
+    )
+  );
+
+  return $access_event_info;
+}
+
+/**
+ * Fetch a access_event object. Make sure that the wildcard you choose
+ * in the access_event entity definition fits the function name here.
+ *
+ * @param $access_event_id
+ *   Integer specifying the access_event entity id.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   A fully-loaded $access_event object or FALSE if it cannot be loaded.
+ *
+ * @see access_event_load_multiple()
+ */
+function access_event_load($access_event_id = NULL, $reset = FALSE) {
+  $access_event_ids = (isset($access_event_id) ? array($access_event_id) : array());
+  $access_event = access_event_load_multiple($access_event_ids, $reset);
+  return $access_event ? reset($access_event) : FALSE;
+}
+
+
+/**
+ * Loads nultiple access_event entities based on certain conditions
+ */
+function access_event_load_multiple($access_event_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('access_event', $access_event_ids, $conditions, $reset);
+}
+
+
+
+/**
+ * Implementing the uri callback defined
+ */
+function access_event_uri($access_event) {
+  return array(
+    'path' => 'access_event/' . $access_event->access_event_id,
+  );
+}
+
+
+/**
+ * Implements hook_menu()
+ */
+function access_event_menu() {
+
+  $items['admin/structure/access_event/manage'] = array(
+    'title' => 'access_event Entity Admin',
+    'description' => 'Manage access_event Entities Structure',
+    'page callback' => 'access_event_admin_page',
+    'access arguments' => array('administer access_event entities'),
+  );
+
+   $items['access_event/%access_event'] = array(
+    'title callback' => 'access_event_page_title',
+    'title arguments' => array(1),
+    'page callback' => 'access_event_page_view',
+    'page arguments' => array(1),
+    'access arguments' => array('view access_event entities'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // This defines a place for us to add access_event entities
+  $items['access_event/add'] = array(
+    'title' => 'Add a access_event Entity',
+    'page callback' => 'access_event_add',
+    'access arguments' => array('create access_event entities'),
+  );
+  $items['api'] = array(
+  	'title' => 'Events',
+  	'page callback' => 'access_event_data_get',
+  	'access callback' => TRUE,
+  	'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+
+/**
+ * Implements hook_permission()
+ */
+function access_event_permission() {
+    return array(
+    'administer access_event entities' =>  array(
+      'title' => t('Administer access_event entities'),
+      'restrict access' => TRUE,
+    ),
+    'view access_event entities' => array(
+      'title' => t('View access_event Entities'),
+    ),
+    'create access_event entities' => array(
+      'title' => t('Create access_event Entities'),
+    ),
+
+  );
+}
+
+
+/**
+ * Just provide some access_event info for the entity administration page.
+ * This can be expanded to add more information / a list of all created entites, etc.
+ */
+function access_event_admin_page() {
+  $output = 'Welcome to the administration page for your access_event Entities.<br/>';
+
+  $output .= '<a href="/access_event/add">Add entity</a>';
+
+  return $output;
+}
+
+/**
+ * Callback for title
+ */
+function access_event_page_title($access_event) {
+  return $access_event->name;
+}
+
+/**
+ * Callback for displaying the entity
+ */
+function access_event_page_view($access_event, $view_mode = 'full') {
+
+  $access_event->content = array();
+  field_attach_prepare_view('access_event', array($access_event->access_event_id => $access_event), $view_mode);
+  entity_prepare_view('access_event', array($access_event->access_event_id => $access_event));
+  $access_event->content += field_attach_view('access_event', $access_event, $view_mode);
+  drupal_set_title($access_event->name);
+  return $access_event->content;
+}
+
+
+
+/**
+ * Implemnts hook_field_extra_fields()
+ *
+ * This exposes the other column of our entity (i.e. name) as a pseudo-field
+ * so that it gets handled by the Entity and Field core functionality.
+ * Node titles get treated in a similar manner.
+ */
+function access_event_field_extra_fields() {
+  $return = array();
+  $return['access_event']['name'] = array(
+    'form' => array(
+      'name' => array(
+        'label' => t('name'),
+        'description' => t('access_event Entity Name'),
+      ),
+    ),
+  );
+
+  return $return;
+}
+
+
+/**
+ * Creates a access_event entity for us - simply intializing the main variables and
+ * sending us to a form to add in the rest.
+ */
+function access_event_add() {
+  $access_event = (object) array(
+    'access_event_id' => '',
+    'type' => 'access_event',
+    'name' => '',
+  );
+
+  return drupal_get_form('access_event_add_form', $access_event);
+}
+
+
+/**
+ * Form callback: allows us to create a access_event entity.
+ *
+ * As you can see below the pattern followed is:
+ * 1. Set up the form for the data that is specific to your
+ * entity - typically the columns of your bas table.
+ * 2. Call on the Field API to pull in the form elements
+ * for fields attached to the entity.
+ */
+function access_event_add_form($form, &$form_state, $access_event) {
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Name'),
+    '#required' => TRUE,
+  );
+
+  field_attach_form('access_event', $access_event, $form, $form_state);
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => 100,
+  );
+
+  return $form;
+}
+
+
+/**
+ * Form callback: Validates access_event_add_form form.
+ * We pass things straight through to the Field API to handle validation
+ * of the attached fields.
+ */
+function access_event_add_form_validate($form, &$form_state) {
+  $access_event_submission = (object) $form_state['values'];
+  field_attach_form_validate('access_event', $access_event_submission, $form, $form_state);
+}
+
+
+/**
+ * Form callback: submits access_event_add_form information
+ */
+function access_event_add_form_submit($form, &$form_state) {
+  $access_event_submission = (object) $form_state['values'];
+  field_attach_submit('access_event', $access_event_submission, $form, $form_state);
+  $access_event = access_event_save($access_event_submission);
+  $form_state['redirect'] = 'access_event/' . $access_event->access_event_id;
+}
+
+
+/**
+ * We save the access_event entity by calling the controller.
+ */
+function access_event_save(&$access_event) {
+  return entity_get_controller('access_event')->save($access_event);
+}
+
+
+/**
+ * access_eventController extends the DrupalDefaultEntityController by adding
+ * an extra function to handle saving of entities.
+ */
+class access_eventController extends DrupalDefaultEntityController{
+
+ /**
+  * Saves the access_event entity mathching custom fields via drupal_write_record()
+  */
+ public function save($access_event) {
+    drupal_write_record('access_event', $access_event);
+    field_attach_insert('access_event', $access_event);
+    module_invoke_all('entity_insert', 'access_event', $access_event);
+    return $access_event;
+  }
+}
+
+
+
+/**
+ * Implements hook_help().
+ */
+function access_event_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#access_event':
+      return "<p>" . t('Once you have activated the module you can configure your entity bundle by visiting "admin/structure/access_event/manage"') . "</p>";
+  }
+}
+
+
+function access_event_data_get($term ='')
+{
+	$data = db_query("SELECT nid,title FROM {node} WHERE title LIKE :title LIMIT 5", array(":title" => $term.'%'))->fetchAll();
+	drupal_json_output($data);
+	drupal_exit();
+}

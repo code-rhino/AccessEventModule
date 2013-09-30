@@ -1,0 +1,9 @@
+name = Mobile Access Event
+description = Mobile Access Event Record.
+core = 7.x
+
+package = CodeRhino modules
+
+dependencies[] = simpletest
+
+files[] = access_event.test

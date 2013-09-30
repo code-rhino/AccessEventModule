@@ -1,0 +1,74 @@
+<?php
+
+class AccessEventTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Access Events',
+      'description' => 'Access Event tests',
+      'group' => 'Access Events',
+    );
+  }
+
+  function setUp() {
+    // Enable the module.
+    parent::setUp('access_event');
+
+    // Create and login user with access.
+    $permissions = array(
+      'access content',
+      'view any access_event entity',
+      'edit any access_event entity',
+      'create access_event entities',
+      'administer access_event entities',
+      'administer site configuration',
+    );
+    $account = $this->drupalCreateUser($permissions);
+    $this->drupalLogin($account);
+
+    // Attach a field
+    $field = array(
+      'field_name' => 'access_event_text' ,
+      'type' => 'text'
+    );
+    field_create_field($field);
+    $instance = array(
+      'label' => 'Subject',
+      'field_name' => 'access_event_text',
+      'entity_type' => 'access_event',
+      'bundle' => 'access_event_bundle'
+    );
+    field_create_instance($instance);
+  }
+
+  function AccessEventCRUDTest() {
+    // Create 10 entities.
+    for ($i = 1; $i <= 10; $i++) 
+    {
+      $edit[$i]['name'] = $this->randomName();
+      $edit[$i]['access_event_text[und][0][value]'] = $this->randomName(32);
+
+      $this->drupalPost('access_event/add' , $edit[$i], 'Save');
+      $this->assertText('name=' . $edit[$i]['name']);
+
+      $this->drupalGet('access_event/' . $i);
+      $this->assertText('name=' . $edit[$i]['name']);
+      $this->assertText($edit[$i]['access_event_text[und][0][value]']);
+    }
+    // delete entity 5
+    $this->drupalPost('access_event/5/edit' , $edit[5], 'Delete');
+    $this->drupalGet('access_event/5');
+    $this->assertResponse(404, 'Deleted entity 5 no longer exists');
+    unset($edit[5]);
+
+    // Update entity 2 and verify the update.
+    $edit[2] = array(
+      'item_description' => 'updated entity 2 ',
+      'access_event_text[und][0][value]' => 'updated entity 2 test text',
+    );
+    $this->drupalPost('access_event/2/edit' , $edit[2], 'Save');
+    $this->assertText('name=' . $edit[2]['name']);
+    $this->assertText('updated entity 2 test text');
+    
+  }
+}
